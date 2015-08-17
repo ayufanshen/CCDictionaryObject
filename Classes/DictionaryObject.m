@@ -57,6 +57,42 @@
     
     self = [self initWithDictionary:dic];
     
+    
+    unsigned int outCount;
+    objc_property_t * props = class_copyPropertyList([self class], &outCount);
+    
+    for (int i = 0; i < outCount; i++) {
+        
+        //name:name
+        //type:NSString
+        //[[dic objectForKey:name] isKindOfClass:type]
+        objc_property_t property = props[i];
+        NSString *propertyName = [NSString stringWithCString:property_getName(property)
+                                                    encoding:NSUTF8StringEncoding];
+        
+        NSString *propertyType = [NSString stringWithCString:property_getAttributes(property)
+                                                    encoding:NSUTF8StringEncoding];
+        
+        NSString *type;
+        if ([propertyType hasPrefix:@"T@"]) {
+            type = [propertyType substringWithRange:NSMakeRange(3,[propertyType rangeOfString:@","].location-4)];
+            
+        }else if ([propertyType hasPrefix:@"TB"]){
+            type = @"__NSCFBoolean";
+        }
+        
+        id value = [dic objectForKey:propertyName];
+        
+        Class valueClass = [value class];
+        Class typeClass  = NSClassFromString(type);
+        
+        if (![valueClass isSubclassOfClass:typeClass])
+        {
+            DDLogWarn(@"WARNING!! 属性名:%@ 不属于类型:%@ ,值为 %@",propertyName,type,value);
+        }
+        
+    }
+    
     return self;
 }
 
